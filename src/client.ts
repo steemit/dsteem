@@ -40,6 +40,7 @@ import packageVersion from './version'
 import {Blockchain} from './helpers/blockchain'
 import {BroadcastAPI} from './helpers/broadcast'
 import {DatabaseAPI} from './helpers/database'
+import {RCAPI} from './helpers/rc'
 import {copy, retryingFetch, waitForEvent} from './utils'
 
 /**
@@ -61,7 +62,7 @@ interface RPCRequest {
     /**
      * Request sequence number.
      */
-    id: number
+    id: number | string
     /**
      * RPC method.
      */
@@ -179,6 +180,11 @@ export class Client {
     public readonly database: DatabaseAPI
 
     /**
+     * RC API helper.
+     */
+    public readonly rc: RCAPI
+
+    /**
      * Broadcast API helper.
      */
     public readonly broadcast: BroadcastAPI
@@ -198,7 +204,6 @@ export class Client {
      */
     public readonly addressPrefix: string
 
-    private seqNo: number = 0
     private timeout: number
     private backoff: typeof defaultBackoff
 
@@ -220,6 +225,7 @@ export class Client {
         this.database = new DatabaseAPI(this)
         this.broadcast = new BroadcastAPI(this)
         this.blockchain = new Blockchain(this)
+        this.rc = new RCAPI(this)
     }
 
     /**
@@ -232,7 +238,7 @@ export class Client {
      */
     public async call(api: string, method: string, params: any = []): Promise<any> {
         const request: RPCCall = {
-            id: ++this.seqNo,
+            id: '0',
             jsonrpc: '2.0',
             method: 'call',
             params: [api, method, params],
@@ -263,7 +269,16 @@ export class Client {
         const response: RPCResponse = await retryingFetch(
             this.address, opts, this.timeout, this.backoff, fetchTimeout
         )
+        // resolve FC error messages into something more readable
         if (response.error) {
+            const formatValue = (value: any) => {
+                switch (typeof value) {
+                    case 'object':
+                        return JSON.stringify(value)
+                    default:
+                        return String(value)
+                }
+            }
             const {data} = response.error
             let {message} = response.error
             if (data && data.stack && data.stack.length > 0) {
@@ -272,14 +287,13 @@ export class Client {
                 message = top.format.replace(/\$\{([a-z_]+)\}/gi, (match: string, key: string) => {
                     let rv = match
                     if (topData[key]) {
-                        rv = topData[key]
+                        rv = formatValue(topData[key])
                         delete topData[key]
                     }
                     return rv
                 })
                 const unformattedData = Object.keys(topData)
-                    .map((key) => ({key, value: topData[key]}))
-                    .filter((item) => typeof item.value === 'string')
+                    .map((key) => ({key, value: formatValue(topData[key])}))
                     .map((item) => `${ item.key }=${ item.value}`)
                 if (unformattedData.length > 0) {
                     message += ' ' + unformattedData.join(' ')
