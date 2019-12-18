@@ -22,14 +22,15 @@ describe('database api', function() {
         assert.deepEqual(Object.keys(result), [
             'head_block_number', 'head_block_id', 'time', 'current_witness',
             'total_pow', 'num_pow_witnesses', 'virtual_supply', 'current_supply',
-            'confidential_supply', 'current_sbd_supply', 'confidential_sbd_supply',
+            'confidential_supply', 'init_sbd_supply', 'current_sbd_supply', 'confidential_sbd_supply',
             'total_vesting_fund_steem', 'total_vesting_shares', 'total_reward_fund_steem',
             'total_reward_shares2', 'pending_rewarded_vesting_shares', 'pending_rewarded_vesting_steem',
-            'sbd_interest_rate', 'sbd_print_rate', 'maximum_block_size', 'current_aslot',
-            'recent_slots_filled', 'participation_count', 'last_irreversible_block_num',
+            'sbd_interest_rate', 'sbd_print_rate', 'maximum_block_size', 'required_actions_partition_percent',
+            'current_aslot', 'recent_slots_filled', 'participation_count', 'last_irreversible_block_num',
             'vote_power_reserve_rate', 'delegation_return_period', 'reverse_auction_seconds',
-            'sbd_stop_percent', 'sbd_start_percent', 'average_block_size',
-            'current_reserve_ratio', 'max_virtual_bandwidth'
+            'available_account_subsidies', 'sbd_stop_percent', 'sbd_start_percent', 'next_maintenance_time',
+            'last_budget_time', 'content_reward_percent', 'vesting_reward_percent', 'sps_fund_percent',
+            'sps_interval_ledger', 'downvote_pool_percent'
         ])
     })
 
@@ -72,7 +73,6 @@ describe('database api', function() {
         const r1 = await liveClient.database.getDiscussions('comments', {
             start_author: 'almost-digital',
             start_permlink: 're-pal-re-almost-digital-dsteem-a-strongly-typed-steem-client-library-20170702t131034262z',
-            tag: 'almost-digital',
             limit: 1,
         })
         assert.equal(r1.length, 1)

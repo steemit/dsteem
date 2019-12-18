@@ -159,7 +159,7 @@ export class Client {
         }
 
         opts.addressPrefix = 'TST'
-        opts.chainId = '46d82ab7d8db682eb1959aed0ada039a6d49afa1602491f93dde9cac3e8e6c32'
+        opts.chainId = 'abc93c9021bbd9a8dd21c438ee3c480a661ca1966b5e4e838326dcf42a3dac2d'
         return new Client('https://testnet.steemitdev.com', opts)
     }
 

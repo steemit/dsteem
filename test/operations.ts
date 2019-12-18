@@ -33,8 +33,6 @@ describe('operations', function() {
             delegatee: acc2.username,
             vesting_shares: newDelegation
         }, acc1Key)
-        const [user2] = await client.database.getAccounts([acc2.username])
-        assert.equal(user2.received_vesting_shares, newDelegation.toString())
     })
 
     it('should send custom', async function() {
