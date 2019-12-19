@@ -51,10 +51,6 @@ export type DiscussionQueryCategory = 'active' | 'blog' | 'cashout' | 'children'
 
 export interface DisqussionQuery {
     /**
-     * Name of author or tag to fetch.
-     */
-    tag: string
-    /**
      * Number of results, max 100.
      */
     limit: number

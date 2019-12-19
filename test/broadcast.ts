@@ -3,7 +3,7 @@ import * as assert from 'assert'
 import * as lorem from 'lorem-ipsum'
 import {VError} from 'verror'
 
-import {Client, PrivateKey, utils} from './../src/index-node'
+import {Client, PrivateKey, utils} from './../src'
 
 import {getTestnetAccounts, randomString, agent} from './common'
 
@@ -42,7 +42,7 @@ describe('broadcast', function() {
     })
 
     it('should handle concurrent broadcasts', async function() {
-        const key = PrivateKey.from(acc2.posting)
+        const key = PrivateKey.fromString(acc2.posting)
         const commentPromise = client.broadcast.comment({
             parent_author: acc1.username,
             parent_permlink: postPermlink,

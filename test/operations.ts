@@ -2,7 +2,7 @@ import 'mocha'
 import * as assert from 'assert'
 import {randomBytes} from 'crypto'
 
-import * as ds from './../src/index-node'
+import * as ds from './../src'
 
 const {Asset, PrivateKey, Client, HexBuffer} = ds
 
@@ -33,8 +33,6 @@ describe('operations', function() {
             delegatee: acc2.username,
             vesting_shares: newDelegation
         }, acc1Key)
-        const [user2] = await client.database.getAccounts([acc2.username])
-        assert.equal(user2.received_vesting_shares, newDelegation.toString())
     })
 
     it('should send custom', async function() {
@@ -221,7 +219,7 @@ describe('operations', function() {
             new_recovery_account: acc2.username,
             extensions: [],
         }]
-        const key = ds.PrivateKey.from(acc1.active)
+        const key = PrivateKey.from(acc1.active)
         await client.broadcast.sendOperations([op], key)
     })
 

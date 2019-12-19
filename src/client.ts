@@ -40,6 +40,7 @@ import packageVersion from './version'
 import {Blockchain} from './helpers/blockchain'
 import {BroadcastAPI} from './helpers/broadcast'
 import {DatabaseAPI} from './helpers/database'
+import {RCAPI} from './helpers/rc'
 import {copy, retryingFetch, waitForEvent} from './utils'
 
 /**
@@ -61,7 +62,7 @@ interface RPCRequest {
     /**
      * Request sequence number.
      */
-    id: number
+    id: number | string
     /**
      * RPC method.
      */
@@ -159,7 +160,7 @@ export class Client {
         }
 
         opts.addressPrefix = 'TST'
-        opts.chainId = '46d82ab7d8db682eb1959aed0ada039a6d49afa1602491f93dde9cac3e8e6c32'
+        opts.chainId = 'abc93c9021bbd9a8dd21c438ee3c480a661ca1966b5e4e838326dcf42a3dac2d'
         return new Client('https://testnet.steemitdev.com', opts)
     }
 
@@ -177,6 +178,11 @@ export class Client {
      * Database API helper.
      */
     public readonly database: DatabaseAPI
+
+    /**
+     * RC API helper.
+     */
+    public readonly rc: RCAPI
 
     /**
      * Broadcast API helper.
@@ -220,6 +226,7 @@ export class Client {
         this.database = new DatabaseAPI(this)
         this.broadcast = new BroadcastAPI(this)
         this.blockchain = new Blockchain(this)
+        this.rc = new RCAPI(this)
     }
 
     /**
@@ -263,7 +270,16 @@ export class Client {
         const response: RPCResponse = await retryingFetch(
             this.address, opts, this.timeout, this.backoff, fetchTimeout
         )
+        // resolve FC error messages into something more readable
         if (response.error) {
+            const formatValue = (value: any) => {
+                switch (typeof value) {
+                    case 'object':
+                        return JSON.stringify(value)
+                    default:
+                        return String(value)
+                }
+            }
             const {data} = response.error
             let {message} = response.error
             if (data && data.stack && data.stack.length > 0) {
@@ -272,14 +288,13 @@ export class Client {
                 message = top.format.replace(/\$\{([a-z_]+)\}/gi, (match: string, key: string) => {
                     let rv = match
                     if (topData[key]) {
-                        rv = topData[key]
+                        rv = formatValue(topData[key])
                         delete topData[key]
                     }
                     return rv
                 })
                 const unformattedData = Object.keys(topData)
-                    .map((key) => ({key, value: topData[key]}))
-                    .filter((item) => typeof item.value === 'string')
+                    .map((key) => ({key, value: formatValue(topData[key])}))
                     .map((item) => `${ item.key }=${ item.value}`)
                 if (unformattedData.length > 0) {
                     message += ' ' + unformattedData.join(' ')
