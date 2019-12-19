@@ -28,7 +28,10 @@ describe('rc_api', function () {
             },
             vesting_shares: '80241942 VESTS',
             delegated_vesting_shares: '60666472 VESTS',
-            received_vesting_shares: '191002659 VESTS'
+            received_vesting_shares: '191002659 VESTS',
+            vesting_withdraw_rate: '0 VESTS',
+            to_withdraw: 0,
+            withdrawn: 0
         }
 
         let bar = client.rc.calculateVPMana(account)

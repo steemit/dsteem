@@ -132,7 +132,7 @@ describe('database api', function() {
             await client.database.verifyAuthority(client.broadcast.sign(tx, bogusKey))
             assert(false, 'should not be reached')
         } catch (error) {
-            assert.equal(error.message, `Missing Posting Authority ${ acc.username }`)
+            assert(error.message.startsWith(`Missing Posting Authority ${ acc.username }`))
         }
     })
 

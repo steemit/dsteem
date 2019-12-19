@@ -11,8 +11,8 @@ describe('blockchain', function() {
 
     const client = new Client(TEST_NODE, {agent})
 
-    const expectedIds = ['000000016187f2f76ad132a7bc1dbf2ed27d7fe1',
-                         '0000000212e6201f1f51fb04784a30e3aff7a2f4'];
+    const expectedIds = ['0000000109833ce528d5bbfb3f6225b39ee10086',
+                         '00000002ed04e3c3def0238f693931ee7eebbdf1'];
     const expectedOps = ['vote', 'vote', 'comment', 'vote', 'vote', 'vote', 'vote',
                          'custom_json', 'producer_reward', 'author_reward', 'fill_vesting_withdraw',
                          'fill_vesting_withdraw', 'comment', 'comment', 'vote', 'vote',
