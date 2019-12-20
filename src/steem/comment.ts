@@ -33,7 +33,7 @@
  * in the design, construction, operation or maintenance of any military facility.
  */
 
-import {Asset} from './asset'
+import {Asset, AssetSymbol} from './asset'
 
 export interface Comment {
     id: number // comment_id_type
@@ -93,4 +93,33 @@ export interface Discussion extends Comment {
 export interface BeneficiaryRoute {
     account: string // account_name_type
     weight: number // uint16_t
+}
+
+export interface VotableAssetOptions {
+    max_accepted_payout: Number // share_type
+    allow_curation_rewards: boolean
+    beneficiaries: BeneficiaryRoute[]
+}
+
+export type CommentOptionsExtensionName =
+    | 'comment_payout_beneficiaries' // 0
+    | 'allowed_vote_assets' // 1
+
+export interface CommentOptionsExtension {
+    0: CommentOptionsExtensionName
+    1: {[key: string]: any}
+}
+
+export interface CommentPayoutBeneficiaries extends CommentOptionsExtension {
+    0: 'comment_payout_beneficiaries'
+    1: {
+        beneficiaries: BeneficiaryRoute[]
+    }
+}
+
+export interface AllowedVoteAssets extends CommentOptionsExtension {
+    0: 'allowed_vote_assets'
+    1: {
+        votable_assets: Array<[AssetSymbol, VotableAssetOptions]>
+    }
 }

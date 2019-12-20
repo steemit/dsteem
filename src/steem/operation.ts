@@ -35,10 +35,11 @@
 
 import {PublicKey} from './../crypto'
 import {AuthorityType} from './account'
-import {Asset, Price, PriceType} from './asset'
+import {Asset, AssetSymbol, Price, PriceType} from './asset'
 import {SignedBlockHeader} from './block'
-import {BeneficiaryRoute} from './comment'
+import {CommentOptionsExtension} from './comment'
 import {ChainProperties, HexBuffer} from './misc'
+import {SMTEmissionsUnit, SMTGenerationPolicy, SMTRuntimeParameter, SMTSetupParameter} from './smt'
 
 /**
  * Operation name.
@@ -54,6 +55,7 @@ export type OperationName = // <id>
     | 'change_recovery_account' // 26
     | 'claim_account' // 22
     | 'claim_reward_balance' // 39
+    | 'claim_reward_balance2' // 47
     | 'create_proposal' // 44
     | 'comment' // 1
     | 'comment_options' // 19
@@ -82,12 +84,20 @@ export type OperationName = // <id>
     | 'reset_account' // 37
     | 'set_reset_account' // 38
     | 'set_withdraw_vesting_route' // 20
+    | 'smt_contribute' // 55
+    | 'smt_create' // 54
+    | 'smt_set_runtime_parameters' // 53
+    | 'smt_set_setup_parameters' // 52
+    | 'smt_setup' // 49
+    | 'smt_setup_emissions' // 50
+    | 'smt_setup_ico_tier' // 51
     | 'transfer' // 2
     | 'transfer_from_savings' // 33
     | 'transfer_to_savings' // 32
     | 'transfer_to_vesting' // 3
     | 'update_proposal_votes' // 45
     | 'vote' // 0
+    | 'vote2' // 48
     | 'withdraw_vesting' // 4
     | 'witness_set_properties' // 42
     | 'witness_update' // 11
@@ -245,6 +255,15 @@ export interface ClaimRewardBalanceOperation extends Operation {
     }
 }
 
+export interface ClaimRewardBalance2Operation extends Operation {
+   0: 'claim_reward_balance2' // 47
+   1: {
+       account: string // account_name_type
+       reward_tokens: AssetSymbol[] // flat_set< asset_symbol_type >
+       extensions: any[]
+   }
+}
+
 export interface ClaimAccountOperation extends Operation {
     0: 'claim_account' // 22
     1: {
@@ -283,7 +302,7 @@ export interface CommentOptionsOperation extends Operation {
       allow_votes: boolean
       /** Whether to allow post to recieve curation rewards. */
       allow_curation_rewards: boolean
-      extensions: Array<[0, {beneficiaries: BeneficiaryRoute[]}]> // flat_set< comment_options_extension >
+      extensions: CommentOptionsExtension[]
     }
 }
 
@@ -748,6 +767,101 @@ export interface SetWithdrawVestingRouteOperation extends Operation {
 }
 
 /**
+ * Contribute to an ongoing SMT ICO.
+ */
+export interface SMTContributeOpertaion extends Operation {
+    0: 'smt_contribute' // 55
+    1: {
+        contributor: string // account_name_type
+        symbol: AssetSymbol
+        contribution_id: number // uint32_t
+        contribution: Asset
+        extensions: any[]
+    }
+}
+
+export interface SMTCreateOperation extends Operation {
+    0: 'smt_create' // 54
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        smt_creation_fee: Asset
+        precision: Number // uint8_t
+        extensions: any[]
+    }
+}
+
+export interface SMTSetRuntimeParametersOperation extends Operation {
+    0: 'smt_set_runtime_parameters' // 53
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        runtime_parameters: SMTRuntimeParameter[]
+        extensions: any[]
+    }
+}
+
+export interface SMTSetSetupParametersOperation extends Operation {
+    0: 'smt_set_setup_parameters' // 52
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        setup_parameters: SMTSetupParameter[]
+        extensions: any[]
+    }
+}
+
+export interface SMTSetupOperation extends Operation {
+    0: 'smt_setup' // 49
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        max_supply: Number // int64_t
+        contribution_begin_time: string // time_point_sec
+        contribution_end_time: string // time_point_sec
+        launch_time: string // time_point_sec
+        steem_units_min: Number // share_type
+        min_unit_ratio: Number // uint32_t
+        max_unit_ratio: Number // uint32_t
+        extensions: any[]
+    }
+}
+
+export interface SMTSetupEmissionsOperation extends Operation {
+    0: 'smt_setup_emissions' // 50
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        schedule_time: string // time_point_sec
+        emissions_unit: SMTEmissionsUnit
+        interval_seconds: Number // uint32_t
+        interval_count: Number // uint32_t
+        lep_time: string // time_point_sec
+        rep_time: string // time_point_sec
+        lep_abs_amount: Number // share_type
+        rep_abs_amount: Number // share_type
+        lep_rel_amount_numerator: Number // uint32_t
+        rep_rel_amount_numerator: Number // uint32_t
+        rel_amount_denom_bits: Number // uint8_t
+        remove: boolean
+        floor_emissions: boolean
+        extensions: any[]
+    }
+}
+
+export interface SMTSetupICOTierOperation extends Operation {
+    0: 'smt_setup_ico_tier' // 51
+    1: {
+        control_account: string // account_name_type
+        symbol: AssetSymbol
+        steem_units_cap: Number // share_type
+        generation_policy: SMTGenerationPolicy
+        remove: boolean
+        extensions: any[]
+    }
+}
+
+/**
  * Transfers STEEM from one account to another.
  */
 export interface TransferOperation extends Operation {
@@ -824,6 +938,17 @@ export interface VoteOperation extends Operation {
          */
         weight: number // int16_t
     }
+}
+
+export interface Vote2Operation extends Operation {
+   0: 'vote2' // 48
+   1: {
+       voter: string // account_name_type
+       author: string // account_name_type
+       permlink: string
+       rshares: Array<[AssetSymbol, Number]> // flat_map< asset_symbol_type, int64_t >
+       extensions: any[]
+   }
 }
 
 /**

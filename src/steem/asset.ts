@@ -42,10 +42,16 @@ export interface SMTAsset {
     nai: string
 }
 
+export class AssetSymbol {
+   constructor(public readonly nai: string, public readonly precision: number) {}
+}
+
 /**
  * Asset symbol string.
  */
-export type AssetSymbol = 'STEEM' | 'VESTS' | 'SBD' | 'TESTS' | 'TBD'
+export type CoreAssetSymbol = 'STEEM' | 'VESTS' | 'SBD' | 'TESTS' | 'TBD'
+
+export type CompatibleAssetSymbol = CoreAssetSymbol | AssetSymbol
 
 /**
  * Class representing a steem asset, e.g. `1.000 STEEM` or `12.112233 VESTS`.
@@ -55,9 +61,10 @@ export class Asset {
     /**
      * Create a new Asset instance from a string, e.g. `42.000 STEEM`.
      */
-    public static fromString(string: string, expectedSymbol?: AssetSymbol) {
+    public static fromString(string: string, expectedSymbol?: CompatibleAssetSymbol) {
         const [amountString, symbol] = string.split(' ')
-        if (['STEEM', 'VESTS', 'SBD', 'TESTS', 'TBD'].indexOf(symbol) === -1) {
+        if (!(expectedSymbol instanceof AssetSymbol)
+            && ['STEEM', 'VESTS', 'SBD', 'TESTS', 'TBD'].indexOf(symbol) === -1) {
             throw new Error(`Invalid asset symbol: ${ symbol }`)
         }
         if (expectedSymbol && symbol !== expectedSymbol) {
@@ -67,7 +74,7 @@ export class Asset {
         if (!Number.isFinite(amount)) {
             throw new Error(`Invalid asset amount: ${ amountString }`)
         }
-        return new Asset(amount, symbol as AssetSymbol)
+        return new Asset(amount, symbol as CompatibleAssetSymbol)
     }
 
     /**
@@ -75,7 +82,7 @@ export class Asset {
      * @param symbol Symbol to use when created from number. Will also be used to validate
      *               the asset, throws if the passed value has a different symbol than this.
      */
-     public static from(value: string | Asset | number, symbol?: AssetSymbol) {
+     public static from(value: string | Asset | number, symbol?: CompatibleAssetSymbol) {
          if (value instanceof Asset) {
              if (symbol && value.symbol !== symbol) {
                  throw new Error(`Invalid asset, expected symbol: ${ symbol } got: ${ value.symbol }`)
@@ -106,7 +113,7 @@ export class Asset {
         return a.amount > b.amount ? a : b
     }
 
-    constructor(public readonly amount: number, public readonly symbol: AssetSymbol) {}
+    constructor(public readonly amount: number, public readonly symbol: CompatibleAssetSymbol) {}
 
     /**
      * Return asset precision.
@@ -120,6 +127,8 @@ export class Asset {
                 return 3
             case 'VESTS':
                 return 6
+            default:
+                return this.symbol.precision
         }
     }
 
