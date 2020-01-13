@@ -95,10 +95,14 @@ export interface BeneficiaryRoute {
     weight: number // uint16_t
 }
 
+export interface CommentPayoutBeneficiaries {
+    beneficiaries: BeneficiaryRoute[]
+}
+
 export interface VotableAssetOptions {
     max_accepted_payout: Number // share_type
     allow_curation_rewards: boolean
-    beneficiaries: BeneficiaryRoute[]
+    beneficiaries: CommentPayoutBeneficiaries
 }
 
 export type CommentOptionsExtensionName =
@@ -110,14 +114,14 @@ export interface CommentOptionsExtension {
     1: {[key: string]: any}
 }
 
-export interface CommentPayoutBeneficiaries extends CommentOptionsExtension {
+export interface CommentPayoutBeneficiariesSV extends CommentOptionsExtension {
     0: 'comment_payout_beneficiaries'
     1: {
         beneficiaries: BeneficiaryRoute[]
     }
 }
 
-export interface AllowedVoteAssets extends CommentOptionsExtension {
+export interface AllowedVoteAssetsSV extends CommentOptionsExtension {
     0: 'allowed_vote_assets'
     1: {
         votable_assets: Array<[AssetSymbol, VotableAssetOptions]>

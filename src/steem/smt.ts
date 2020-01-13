@@ -63,6 +63,11 @@ export interface SMTEmissionsUnit {
     token_unit: Array<[string, Number]> // flat_map< unit_target_type, uint16_t >
 }
 
+export interface SMTGenerationUnit {
+    steem_unit: Array<[string, Number]> // flat_map< unit_target_type, uint16_t
+    token_unit: Array<[string, Number]> // flat_map< unit_target_type, uint16_t
+}
+
 export type SMTGenerationPolicyName =
     | 'smt_capped_generation_policy'
 
@@ -74,7 +79,6 @@ export interface SMTGenerationPolicy {
 export interface SMTCappedGenerationPolicy extends SMTGenerationPolicy {
     0: 'smt_capped_generation_policy'
     1: {
-       steem_unit: Array<[string, Number]> // flat_map< unit_target_type, uint16_t
-       token_unit: Array<[string, Number]> // flat_map< unit_target_type, uint16_t
+        generation_unit: SMTGenerationUnit
     }
 }

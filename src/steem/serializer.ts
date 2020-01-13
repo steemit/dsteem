@@ -35,7 +35,7 @@
 
 import * as ByteBuffer from 'bytebuffer'
 import {PublicKey} from './../crypto'
-import {Asset, AssetSymbol, Price} from './asset'
+import {Asset, AssetSymbol, CoreAssetSymbol, Price} from './asset'
 import {HexBuffer} from './misc'
 import {Operation} from './operation'
 
@@ -90,7 +90,9 @@ const BooleanSerializer = (buffer: ByteBuffer, data: boolean) => {
     buffer.writeByte(data ? 1 : 0)
 }
 
-const StaticVariantSerializer = (itemSerializers: { [name: string]: Serializer; }) => {
+export interface StaticVariantSerializerMapType {[name: string]: Serializer}
+
+const StaticVariantSerializer = (itemSerializers: StaticVariantSerializerMapType) => {
     return (buffer: ByteBuffer, data: [number, any]) => {
         const serializer = itemSerializers[data[0]]
         if (!serializer) {
@@ -138,37 +140,54 @@ const AssetSerializer = (buffer: ByteBuffer, data: Asset | string | number) => {
     const precision = asset.getPrecision()
     buffer.writeInt64(Math.round(asset.amount * Math.pow(10, precision)))
     buffer.writeUint8(precision)
-    if (asset.symbol instanceof AssetSymbol) {
-        AssetSymbolSerializer(buffer, asset.symbol)
-    } else {
+    if (typeof asset.symbol === 'string') {
         for (let i = 0; i < 7; i++) {
             buffer.writeUint8(asset.symbol.charCodeAt(i) || 0)
         }
+    } else {
+        AssetSymbolSerializer(buffer, asset.symbol)
     }
 }
 
 const AssetSymbolSerializer = (buffer: ByteBuffer, data: AssetSymbol) => {
     let nai = 0
-    if (!data.nai.startsWith('@@')) {
-        throw new Error(`Asset Symbol NAIs must be prefixed with '@@'. Was ${ data.nai }`)
-    }
-
-    let precision = 0
     let symbol = ''
+    let precision = 0
 
-    switch (data.nai) {
-        case '@@000000021':
-            precision = 3
-            symbol = 'STEEM'
-            break
-        case '@@000000013':
-            precision = 3
-            symbol = 'SBD'
-            break
-        case '@@000000037':
-            precision = 6
-            symbol = 'VESTS'
-            break
+    if (typeof data === 'string') {
+        symbol = data
+        switch (symbol) {
+            case 'STEEM':
+            case 'SBD':
+            case 'TESTS':
+            case 'TBD':
+                precision = 3
+                break
+            case 'VESTS':
+                precision = 6
+                break
+            default:
+                throw new Error(`Unknown Asset Symbol ${ symbol }`)
+        }
+    } else {
+        if (!data.nai.startsWith('@@')) {
+           throw new Error(`Asset Symbol NAIs must be prefixed with '@@'. Was ${ data.nai }`)
+        }
+
+        switch (data.nai) {
+            case '@@000000021':
+                precision = 3
+                symbol = 'STEEM'
+                break
+            case '@@000000013':
+                precision = 3
+                symbol = 'SBD'
+                break
+            case '@@000000037':
+                precision = 6
+                symbol = 'VESTS'
+                break
+        }
     }
 
     if (precision > 0) {
@@ -267,16 +286,20 @@ const BeneficiarySerializer = ObjectSerializer([
     ['weight', UInt16Serializer],
 ])
 
+const CommentPayoutBeneficiarySerializer = ObjectSerializer([
+    ['beneficiaries', ArraySerializer(BeneficiarySerializer)]
+])
+
 const VotableAssetOptionsSerializer = ObjectSerializer([
     ['max_accepted_payout', Int64Serializer],
     ['allow_curation_rewards', BooleanSerializer],
-    ['beneficiares', ArraySerializer(BeneficiarySerializer)]
+    ['beneficiaries', CommentPayoutBeneficiarySerializer]
 ])
 
-const CommentOptionsExtensionSerializers: {[name: string]: Serializer} = {}
+const CommentOptionsExtensionSerializers: StaticVariantSerializerMapType = {}
 
 CommentOptionsExtensionSerializers.comment_payout_beneficiaires = StaticVariantDataSerializer(0, [
-    ['beneficiares', ArraySerializer(BeneficiarySerializer)]
+    ['beneficiaries', ArraySerializer(BeneficiarySerializer)]
 ])
 
 CommentOptionsExtensionSerializers.allowed_vote_assets = StaticVariantDataSerializer(1, [
@@ -315,7 +338,7 @@ RewardCurveEnum.convergent_square_root = 5
 
 const RewardCurveSerializer = EnumSerializer(RewardCurveEnum)
 
-const SMTRuntimeParameterSerializers: {[name: string]: Serializer} = {}
+const SMTRuntimeParameterSerializers: StaticVariantSerializerMapType = {}
 
 SMTRuntimeParameterSerializers.smt_param_windows_v1 = StaticVariantDataSerializer(0, [
     ['cashout_window_seconds', UInt32Serializer],
@@ -324,7 +347,7 @@ SMTRuntimeParameterSerializers.smt_param_windows_v1 = StaticVariantDataSerialize
 
 SMTRuntimeParameterSerializers.smt_param_vote_regeneration_period_seconds_v1 = StaticVariantDataSerializer(1, [
     ['vote_regeneration_period_seconds', UInt32Serializer],
-    ['votes_per_regeneration_period_seconds_v1', UInt32Serializer]
+    ['votes_per_regeneration_period', UInt32Serializer]
 ])
 
 SMTRuntimeParameterSerializers.smt_param_rewards_v1 = StaticVariantDataSerializer(2, [
@@ -340,7 +363,7 @@ SMTRuntimeParameterSerializers.smt_param_allow_downvotes = StaticVariantDataSeri
 
 const SMTRuntimeParameterSerializer = StaticVariantSerializer(SMTRuntimeParameterSerializers)
 
-const SMTSetupParameterSerializers: {[name: string]: Serializer} = {}
+const SMTSetupParameterSerializers: StaticVariantSerializerMapType = {}
 
 SMTSetupParameterSerializers.smt_param_allow_voting = StaticVariantDataSerializer(0, [
     ['value', BooleanSerializer]
@@ -348,18 +371,24 @@ SMTSetupParameterSerializers.smt_param_allow_voting = StaticVariantDataSerialize
 
 const SMTSetupParameterSerializer = StaticVariantSerializer(SMTSetupParameterSerializers)
 
-const SMTEmissionsUnitSerializer = FlatMapSerializer(StringSerializer, UInt16Serializer)
+const SMTEmissionsUnitSerializer = ObjectSerializer([
+    ['token_unit', FlatMapSerializer(StringSerializer, UInt16Serializer)]
+])
 
-const SMTGenerationPolicySerializers: {[name: string]: Serializer} = {}
-
-SMTGenerationPolicySerializers.smt_capped_generation_policy = StaticVariantDataSerializer(0, [
+const SMTGenerationUnitSerializer = ObjectSerializer([
     ['steem_unit', FlatMapSerializer(StringSerializer, UInt16Serializer)],
     ['token_unit', FlatMapSerializer(StringSerializer, UInt16Serializer)]
 ])
 
+const SMTGenerationPolicySerializers: StaticVariantSerializerMapType = {}
+
+SMTGenerationPolicySerializers.smt_capped_generation_policy = StaticVariantDataSerializer(0, [
+    ['generation_unit', SMTGenerationUnitSerializer]
+])
+
 const SMTGenerationPolicySerializer = StaticVariantSerializer(SMTGenerationPolicySerializers)
 
-const OperationSerializers: {[name: string]: Serializer} = {}
+const OperationSerializers: StaticVariantSerializerMapType = {}
 
 OperationSerializers.account_create = StaticVariantDataSerializer(9, [
     ['fee', AssetSerializer],
@@ -431,7 +460,7 @@ OperationSerializers.claim_reward_balance = StaticVariantDataSerializer(39, [
 
 OperationSerializers.claim_reward_balance2 = StaticVariantDataSerializer( 47, [
     ['account', StringSerializer],
-    ['reward_tokens', ArraySerializer(AssetSymbolSerializer)]
+    ['reward_tokens', ArraySerializer(AssetSerializer)]
 ])
 
 OperationSerializers.comment = StaticVariantDataSerializer(1, [
@@ -617,7 +646,7 @@ OperationSerializers.set_withdraw_vesting_route = StaticVariantDataSerializer(20
     ['auto_vest', BooleanSerializer],
 ])
 
-OperationSerializers.smt_contribution = StaticVariantDataSerializer(55, [
+OperationSerializers.smt_contribute = StaticVariantDataSerializer(55, [
     ['contributor', StringSerializer],
     ['symbol', AssetSymbolSerializer],
     ['contribution_id', UInt32Serializer],
@@ -636,15 +665,15 @@ OperationSerializers.smt_create = StaticVariantDataSerializer(54, [
 OperationSerializers.smt_set_runtime_parameters = StaticVariantDataSerializer(51, [
     ['control_account', StringSerializer],
     ['symbol', AssetSymbolSerializer],
-    ['runtime_parameters', SMTRuntimeParameterSerializer],
+    ['runtime_parameters', ArraySerializer(SMTRuntimeParameterSerializer)],
     ['extensions', ArraySerializer(VoidSerializer)]
 ])
 
 OperationSerializers.smt_set_setup_parameters = StaticVariantDataSerializer(53, [
     ['control_account', StringSerializer],
     ['symbol', AssetSymbolSerializer],
-    ['setup_parameters', SMTSetupParameterSerializer],
-    ['extendsions', ArraySerializer(VoidSerializer)]
+    ['setup_parameters', ArraySerializer(SMTSetupParameterSerializer)],
+    ['extensions', ArraySerializer(VoidSerializer)]
 ])
 
 OperationSerializers.smt_setup = StaticVariantDataSerializer(49, [

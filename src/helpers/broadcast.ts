@@ -272,12 +272,10 @@ export class BroadcastAPI {
     }
 
     /**
-     * Sign and broadcast transaction with operations to the network. Throws if the transaction expires.
-     * @param operations List of operations to send.
-     * @param key Private key(s) used to sign transaction.
+     * Prepares a transaction for broadcast and signs it.
      */
-    public async sendOperations(operations: Operation[],
-                                key: PrivateKey | PrivateKey[]): Promise<TransactionConfirmation> {
+    public async prepareTransaction(operations: Operation[],
+                                    key: PrivateKey | PrivateKey[]): Promise<SignedTransaction> {
         const props = await this.client.database.getDynamicGlobalProperties()
 
         const ref_block_num = props.head_block_number & 0xFFFF
@@ -293,7 +291,17 @@ export class BroadcastAPI {
             ref_block_prefix,
         }
 
-        const result = await this.send(this.sign(tx, key))
+        return this.sign(tx, key)
+    }
+
+    /**
+     * Sign and broadcast transaction with operations to the network. Throws if the transaction expires.
+     * @param operations List of operations to send.
+     * @param key Private key(s) used to sign transaction.
+     */
+    public async sendOperations(operations: Operation[],
+                                key: PrivateKey | PrivateKey[]): Promise<TransactionConfirmation> {
+        const result = await this.send(await this.prepareTransaction(operations, key))
         assert(result.expired === false, 'transaction expired')
 
         return result

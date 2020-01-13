@@ -34,7 +34,7 @@
  */
 
 import {Client} from './../client'
-import {ExtendedAccount} from './../steem/account'
+import {Authority, ExtendedAccount} from './../steem/account'
 import {Asset, Price} from './../steem/asset'
 import {BlockHeader, SignedBlock} from './../steem/block'
 import {Discussion} from './../steem/comment'
@@ -191,8 +191,8 @@ export class DatabaseAPI {
     /**
      * Verify signed transaction.
      */
-    public async verifyAuthority(stx: SignedTransaction): Promise<boolean> {
-        return this.call('verify_authority', [stx])
+    public async verifyAuthority(stx: SignedTransaction, auth?: Authority): Promise<boolean> {
+        return this.call('verify_authority', [stx, auth])
     }
 
 }

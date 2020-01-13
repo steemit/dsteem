@@ -259,7 +259,7 @@ export interface ClaimRewardBalance2Operation extends Operation {
    0: 'claim_reward_balance2' // 47
    1: {
        account: string // account_name_type
-       reward_tokens: AssetSymbol[] // flat_set< asset_symbol_type >
+       reward_tokens: Asset[] // flat_set< asset >
        extensions: any[]
    }
 }
